@@ -1,5 +1,10 @@
 pipeline {
     agent any
+    parameters {
+        string(name: 'FILE_NAME', defaultValue: 'app', description: 'Имя исполняемого файла')
+        booleanParam(name: 'RUN_UNIT', defaultValue: true, description: 'Запустить unit тесты')
+        booleanParam(name: 'RUN_INTEGRATION', defaultValue: true, description: 'Запустить интеграционные тесты')
+    }
     stages {
         stage('Print Info') {
             steps {
@@ -10,12 +15,46 @@ pipeline {
         }
         stage('Build Executable file') {
             steps {
-                sh 'g++ main.cpp -o main'
+                sh 'g++ app.cpp -o ${params.FILE_NAME}'
+            }
+        }
+        stage('Run Unit Tests') {
+            when {
+                expression { return params.RUN_UNIT }
+            }
+            steps {
+                sh 'chmod u+x unit_tests.sh'
+                sh './unit_tests.sh'
+            }
+        }
+        stage('Run Integration Tests') {
+            when {
+                expression { return params.RUN_INTEGRATION }
+            }
+            steps {
+                sh 'chmod u+x integration_tests.sh'
+                sh './integration_tests.sh'
             }
         }
         stage('Application Launch Test') {
             steps {
-                sh './main'
+                sh "./${params.FILE_NAME}"
+            }
+        }
+        stage('Send to Deploy Server') {
+            steps {
+                sshPublisher(
+                    publishers: [
+                        sshPublisherDesc(
+                            configName: "Prod",
+                            transfers: [
+                                sshTransfer(
+                                    sourceFiles: "${params.FILE_NAME}"
+                                )
+                            ]
+                        )
+                    ]
+                )
             }
         }
     }
