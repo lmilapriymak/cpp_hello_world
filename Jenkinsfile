@@ -15,7 +15,7 @@ pipeline {
         }
         stage('Build Executable file') {
             steps {
-                sh 'g++ app.cpp -o ${params.FILE_NAME}'
+                sh "g++ app.cpp -o ${params.FILE_NAME}"
             }
         }
         stage('Run Unit Tests') {
@@ -39,22 +39,6 @@ pipeline {
         stage('Application Launch Test') {
             steps {
                 sh "./${params.FILE_NAME}"
-            }
-        }
-        stage('Send to Deploy Server') {
-            steps {
-                sshPublisher(
-                    publishers: [
-                        sshPublisherDesc(
-                            configName: "Prod",
-                            transfers: [
-                                sshTransfer(
-                                    sourceFiles: "${params.FILE_NAME}"
-                                )
-                            ]
-                        )
-                    ]
-                )
             }
         }
     }
